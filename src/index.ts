@@ -20,6 +20,7 @@ app.get("/api/v1/health", (c) => c.json({ status: "ok" }));
 
 // Auth routes
 app.route("/api/v1/auth", authRoutes);
+app.route("/auth", authRoutes);
 
 // TODO: Phase 2 — Subscription webhook routes (Stripe / StoreKit)
 
