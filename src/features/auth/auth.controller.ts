@@ -22,9 +22,9 @@ export async function handleVerifyOtp(c: Context) {
     return c.json({ error: "Invalid input. Email and 6-digit OTP required." }, 422);
   }
 
-  const { customToken } = await authService.verifyOtp(
+  const { customToken, isNewUser } = await authService.verifyOtp(
     result.data.email,
     result.data.otp
   );
-  return c.json({ customToken }, 200);
+  return c.json({ customToken, isNewUser }, 200);
 }

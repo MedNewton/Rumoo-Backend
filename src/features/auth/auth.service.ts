@@ -27,7 +27,7 @@ export async function requestOtp(email: string): Promise<void> {
 export async function verifyOtp(
   email: string,
   otp: string
-): Promise<{ customToken: string }> {
+): Promise<{ customToken: string; isNewUser: boolean }> {
   const normalizedEmail = email.toLowerCase();
   const docRef = firestore.collection(OTP_COLLECTION).doc(normalizedEmail);
   const doc = await docRef.get();
@@ -74,6 +74,23 @@ export async function verifyOtp(
     uid = user.uid;
   }
 
+  // Check/create profile document and determine isNewUser
+  const profileRef = firestore.collection("profiles").doc(uid);
+  const profileSnap = await profileRef.get();
+
+  let isNewUser: boolean;
+  if (!profileSnap.exists) {
+    await profileRef.set({
+      email: normalizedEmail,
+      role: null,
+      createdAt: new Date().toISOString(),
+    });
+    isNewUser = true;
+  } else {
+    const profileData = profileSnap.data();
+    isNewUser = profileData?.role == null;
+  }
+
   const customToken = await auth.createCustomToken(uid);
-  return { customToken };
+  return { customToken, isNewUser };
 }
