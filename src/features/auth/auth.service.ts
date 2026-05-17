@@ -74,21 +74,30 @@ export async function verifyOtp(
     uid = user.uid;
   }
 
-  // Check/create profile document and determine isNewUser
-  const profileRef = firestore.collection("profiles").doc(uid);
-  const profileSnap = await profileRef.get();
+  // Determine isNewUser by checking every collection where a completed profile
+  // can live: `profiles` (Instagram OAuth path), `businessProfiles`, and
+  // `influencerProfiles` (email/OTP registration paths).
+  const [profileSnap, businessSnap, influencerSnap] = await Promise.all([
+    firestore.collection("profiles").doc(uid).get(),
+    firestore.collection("businessProfiles").doc(uid).get(),
+    firestore.collection("influencerProfiles").doc(uid).get(),
+  ]);
 
-  let isNewUser: boolean;
+  const hasCompleteProfile =
+    (profileSnap.exists && profileSnap.data()?.role != null) ||
+    businessSnap.exists ||
+    influencerSnap.exists;
+
+  const isNewUser = !hasCompleteProfile;
+
+  // Bootstrap the `profiles` stub on first verification so the Instagram OAuth
+  // path has somewhere to merge into later.
   if (!profileSnap.exists) {
-    await profileRef.set({
+    await firestore.collection("profiles").doc(uid).set({
       email: normalizedEmail,
       role: null,
       createdAt: new Date().toISOString(),
     });
-    isNewUser = true;
-  } else {
-    const profileData = profileSnap.data();
-    isNewUser = profileData?.role == null;
   }
 
   const customToken = await auth.createCustomToken(uid);
