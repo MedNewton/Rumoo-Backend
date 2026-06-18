@@ -1,13 +1,18 @@
 import { Resend } from "resend";
+import { getResendEnv } from "../../config/env.js";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "noreply@rumoo.app";
+function getResendClient() {
+  const { apiKey, fromEmail } = getResendEnv();
+  return { resend: new Resend(apiKey), fromEmail };
+}
 
 export async function sendOtpEmail(
   to: string,
   otp: string,
   expiryMinutes: number
 ): Promise<void> {
+  const { resend, fromEmail } = getResendClient();
+
   await resend.emails.send({
     from: fromEmail,
     to,
